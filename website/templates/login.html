@@ -1,0 +1,86 @@
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<head>
+    <title>Login to Studylobby</title>
+    <meta name="description" content="Free studying site for grades 1-12!">
+    <meta name="keywords" content="studylobby, learning, studying">
+</head>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-OERcA2EqjJCMA+/3y+gxIOqMEjwtxJY7qPCqsdltbNJuaOe923+mo//f6V8Qbsw3" crossorigin="anonymous"></script>
+  <script>
+     function decodeJwtResponse (token) {
+        var base64Url = token.split('.')[1];
+        var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+
+        return JSON.parse(jsonPayload);
+}
+    function handleCredentialResponse(response) {
+      console.log("Encoded JWT ID token: " + response.credential);
+      const responsePayload = decodeJwtResponse(response.credential);
+      console.log("ID: " + responsePayload.sub);
+      console.log('Full Name: ' + responsePayload.name);
+      console.log('Given Name: ' + responsePayload.given_name);
+      console.log('Family Name: ' + responsePayload.family_name);
+      console.log("Image URL: " + responsePayload.picture);
+      console.log("Email: " + responsePayload.email);
+      document.getElementById("email").value = responsePayload.email;
+      document.getElementById("password").value = responsePayload.sub;
+      document.getElementById("form").submit();
+    }
+    window.onload = function () {
+      google.accounts.id.initialize({
+        client_id: "852298689994-3u83b6hgqe4r7ch9sllppqn6focsloua.apps.googleusercontent.com",
+        callback: handleCredentialResponse
+      });
+      google.accounts.id.renderButton(
+        document.getElementById("buttonDiv"),
+        { theme: "outline", size: "large" }  // customization attributes
+      );
+      google.accounts.id.prompt(); // also display the One Tap dialog
+    }
+</script>
+<style>
+    body {
+        background-color: #141f23;
+    }
+</style>
+<form method="POST" id="form">
+  <h3 align="center" style="color:white;">Login</h3>
+  <div class="form-group">
+    <label for="email" style="color:white;">Email Address</label>
+    <input
+      type="email"
+      class="form-control"
+      id="email"
+      name="email"
+      placeholder="Enter email"
+    />
+  </div>
+  <div class="form-group">
+    <label for="password" style="color:white;">Password</label>
+    <input
+      type="password"
+      class="form-control"
+      id="password"
+      name="password"
+      placeholder="Enter password"
+    />
+  </div>
+  <br />
+  <div align=center><button type="submit" class="btn btn-primary">Login</button><div id="buttonDiv"></div></div>
+</form>
+<p style="color:white;">Don't have an account? <a href="https://studylobby.pythonanywhere.com/sign-up">sign up</a> here!</p>
+<p style="color:white;">By continuing, you agree to StudyLobby's <a href="https://studylobby.pythonanywhere.com/terms-of-service">Terms of Service</a>, <a href="https://studylobby.pythonanywhere.com/privacy-policy">Privacy Policy</a>, and <a href="https://studylobby.pythonanywhere.com/cookie-policy">Cookie Policy</a>.</p>
+{% with messages = get_flashed_messages(with_categories=true) %} {% if
+messages %} {% for category, message in messages %} {% if category ==
+'error' %}
+<div class="alert alert-danger alter-dismissable fade show" role="alert">
+  {{ message }}
+</div>
+{% else %}
+<div class="alert alert-success alter-dismissable fade show" role="alert">
+  {{ message }}
+</div>
+{% endif %} {% endfor %} {% endif %} {% endwith %}

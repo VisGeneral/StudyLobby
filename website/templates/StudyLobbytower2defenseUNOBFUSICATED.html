@@ -1,0 +1,1506 @@
+<head>
+    <meta charset="UTF-8" />
+    <title>Tower 2Defense</title>
+    <script src="//cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <style type="text/css">
+        body {
+            margin: 0;
+        }
+    </style>
+    <style>
+        canvas {
+            padding-left: 0;
+            padding-right: 0;
+            margin-left: auto;
+            margin-right: auto;
+            display: block;
+            width: 800px;
+        }
+        body {
+        background-color: #17202b;
+        }
+        h6 {
+        color: white;
+        margin-left: -3px;
+        }
+
+        .turrets {
+        display: flex;
+        margin-left: auto;
+        margin-right: auto;
+        width: 50%;
+        text-align: center;
+        padding: 10px;
+        }
+
+        div.form
+        {
+            display: flex;
+            text-align: center;
+        }
+        form
+        {
+            display: flex;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .turret {
+        margin: 0 10px;
+        }
+    </style>
+
+    <style media='screen' type='text/css'>
+        @font-face {
+            font-family: font1;
+            src: url('static/assets/Helvetica-Bold.ttf');
+            font-weight:400;
+            font-weight:normal;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@8"></script>
+<div style="font-family:font1; position:absolute; left:-1000px; visibility:hidden;">.</div>
+</head>
+<body>
+<div>
+    <script>
+        var config = {
+            type: Phaser.AUTO,
+            parent: 'content',
+            width: 810,
+            height: 512,
+            physics: {
+                default: 'arcade'
+            },
+            scene: {
+                key: 'main',
+                preload: preload,
+                create: create,
+                update: update
+            }
+        };
+        function sleep(milliseconds) {
+        const date = Date.now();
+        let currentDate = null;
+        do {
+            currentDate = Date.now();
+        } while (currentDate - date < milliseconds);
+        }
+        var game = new Phaser.Game(config);
+        var coins = 50;
+        var coinsText = 50;
+        var laser_fire;
+        var path;
+        var turret_type="basic";
+        var health = 100;
+        var healthText = 100;
+        var trashstatus="normal";
+        var turrets;
+        var turrets2;
+        var gatlingcd=50;
+        var turrets3;
+        var costtext;
+        var turrettext;
+        var turrets4;
+        var turrets5;
+        var turrets6;
+        var turrets7;
+        var difficulty = 1;
+        var difficultytext = 1;
+        var lastClick = 0;
+        var delay = 100;
+        var starthp = 100;
+        var spawntime = 2000;
+        var enemies;
+        var basic_count = 0;
+        var medium_count = 0;
+        var advanced_count = 0;
+        var rocket_count = 0;
+        var sniper_count = 0;
+        var gatling_count = 0;
+        var ENEMY_SPEED = 1/10000;
+
+        var maxmap = 2
+        var minmap = 1
+        var mapselection = (Math.floor(Math.random() * (maxmap - minmap + 1)) + minmap)
+        var BULLET_DAMAGE4 = 5;
+        var BULLET_DAMAGE = 25;
+        var BULLET_DAMAGE2 = 10;
+        var BULLET_DAMAGE3 = 10000;
+        var BULLET_DAMAGE5 = 75
+
+        if (mapselection == "1") {
+            var map =  [[ 0,-1, 0, 0, 0, 0, -1, -1, -1, -1],
+                        [ 0,-1, 0, 0, 0, 0, 0, 0, 0, 0],
+                        [ 0,-1,-1,-1,-1,-1,-1,-1, 0, 0],
+                        [ 0, 0, 0, 0, 0, 0, 0,-1, 0, 0],
+                        [ -1, 0, -1, 0, 0, 0, 0,-1, 0, 0],
+                        [ 0, -1, 0, 0, -1, 0, 0,-1, 0, 0],
+                        [ -1, -1, -1, -1, 0, 0, 0,-1, 0, 0],
+                        [ -1, -1, -1, -1, -1, 0, 0,-1, 0, 0]];
+        }
+
+        else if (mapselection == "2") {
+            var map =  [[ 0, -1, 0, 0, 0, -1, -1, -1, -1, -1],
+                        [ 0, -1, 0, 0, 0, 0, 0, 0, 0, 0],
+                        [ 0, -1, -1, -1, -1, -1, -1, -1, -1, 0],
+                        [ 0, 0, 0, 0, 0, -1, 0 ,0, -1, 0],
+                        [ -1, -1, -1, -1, -1, -1, -1 ,-1, -1, 0],
+                        [ 0, -1, 0, 0, 0, 0, 0 ,0, 0, -1],
+                        [ -1, -1, -1, -1, -1, -1, -1 ,-1, -1, 0],
+                        [ -1, -1, -1, -1, 0, 0, 0 ,0, -1, 0]];
+        }
+
+        function reached_end() {
+            health -= 1
+            healthText.setText('Health: ' + health);
+            if (health < 1){
+            health=0
+                Swal.fire({
+                title: 'Game Over!',
+                text: "Would you like to restart?",
+                showCancelButton: false,
+                confirmButtonColor: '#3085d6',
+                confirmButtonText: 'Yes',
+                }).then((result) => {
+                if (result.value) {
+                    location.reload();
+                }
+                })
+            }
+            coins += 10;
+            coinsdisplay = ~~coins;
+            coinsText.setText('Score: ' + coinsdisplay);
+        }
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function preload() {
+            this.load.image('background','static/assets/background.png');
+            this.load.image('background2','static/assets/background2.png');
+            this.textures.addBase64('sprites0', 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADwAAAA8CAMAAAANIilAAAAAAXNSR0IB2cksfwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAXpQTFRFAAAANDQ0NTU1NDQ0NTU1Ojo6TU1NUVFRPj4+Q0NDfn5+jY2NUlJSREREf39/jo6OU1NTMjIyNDQ0NDQ0NDQ0NDQ0NDQ0MDAwNDQ0NTU1NTU1NTU1NTU1NTU1NTU1NTU1NDQ0MjIyNDQ0NDQ0NTU1NDQ0NDQ0NDQ0NTU1VlZWQEBAVFRUSUlJODg4NTU1MjIyNDQ0NTU1dHR0mZmZlpaWdXV1TExMNjY2MzMzNTU1Nzc3goKCmJiYVVVVNTU1NDQ0NTU1bW1tiIiIRkZGNTU1NDQ0RUVFh4eHk5OTUFBQQUFBcnJyTk5OYWFhPT09gICANTU1NDQ0iYmJS0tLNTU1NDQ0NTU1aGhobGxsNDQ0MzMzNTU1NDQ0NDQ0l5eXkpKSkJCQi4uLfX19W1tbNDQ0MDAwSkpKT09PSEhIPDw8NDQ0MjIyMzMzMzMzMDAwNDQ0NTU1NDQ0NDQ0NDQ0NDQ0MzMzMDAwNDQ0NDQ0NTU1NDQ0MzMzNDQ0MzMzMbwX+wAAAH50Uk5TAKb5qv////////////////8MJSu5HBACMoe2z9XxxrqQQBVu+MdDo/T//////98rB4b///////8uNf/////8gJH////cyv/////////////juP//x3r9//+OM9pAYP///////3IL/////w4VhxIHUafVwKBjMAQXKDMmIRgGU1TR3gAAAYRJREFUeJzt1fdPwkAYgOFTPwRFKE4c4MQBCI6iOEHBhSDDrbj33nv87zb2GB0nrWhiTN8fv96TNm1zh9DPl5PLSR7OA05ysSpfjdPIxwWFWlyRfKzTUziDgv8gLi4pZSvjYjwtrzASaWVVdY2JzczFeFpbV98gThubLOm/Mwen1dwihlvbADRqK5uNi9mhvd3BaGeHgHZ2MTfrphNZuTgxdvX0usHUx8f9ThgYHMqEaZoaBo+Xj0fAMZpaQsa0zw9jfDwOE5OSsMsu/OwWUE9JwswlAWbeKH6szwIwHdTjQgDsMDMGcr+OdTNi6aRhAyWWQcEKVrCC/z/OavfMYt8Ok8uMI+SIOAqB9FOSHHPEmvk4Bv5ZSZiag3k+Xlh0L0nCyw5Y4ePVOIR9EmzEBtE1PkbrALagdiO5anNL2PbOLvPF9gQW7ccAVAd2a6LDkLCjYzdA7ESI0emZ+YsfBOeJe89FLEIXl1fR1LJrkW5u7+4fRC1Cxsen52QvIr2+vRPoN/oA3Boe7EpgefwAAAAASUVORK5CYII=')
+            this.textures.addBase64('sprites', 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAMAAABg3Am1AAAAAXNSR0IB2cksfwAAAAlwSFlzAAALEwAACxMBAJqcGAAAATVQTFRFAAAAkWEzkWI0kGIzkGE0kGI0kWE0kGE0kWI0mGc2r3c/tnxBvoFEsnlAnGk4lGQ1xYZHzYxKun5Dj2EzRi4XAAAAi14xq3Q9gFUtAAAAAAAAAAAAAAAAjF4yg1kvwYRFil0xAAAAjmAzyYlIAAAAAAAAAAAAVTkcoGw5x4hIvYFEuH1CYKRZUq9fj51UAAAAdk8qp3E8sXlAS6pdKrtnSLJhi3I9qnQ9qH1CUJlTAAAAfFMsmWc3bZpTd3hAiFwwpXA7OrJiPapdimc3AAAAqXM9jV8zXY5NAAAAQ65fn2w5oIFEV5RQAAAAAAAAk2M0rXY+fpFOMLVjhG06AAAAZZ5VNLhldIBFb0oowoRGtHtBrpRPxodHrJNOhlswjl8yYEAgmWYzkGEzkmIxkGEzkWAzkGIztnVUqAAAAGd0Uk5TAF9/n7+PT8////////////////AhCLX/fhUECRrFjP+3BuL/ARgNNv////////8OYf///////////xBv////qf////8T/9T/Fv////8RC///////A////1P//////5pxMA/vL99vrx32GY0AAAHoSURBVHic7ZXtQ9JQFMbngHzkbQ5TQ+4QFQFZJOKyhMwsUrSGr2UFpZT5//8JnTNazrbJUD/6fD3Pb/ece885k6QH3U4jcigUjsjyo2D20VHYCgfxh4CxaCwWT0SjScjy/QMjUJRxta8UJiYeD/BPTiGVUm1NA0/SMzP+9kxGaIjH/wEJICuEmAwMzAI5AsScXz4Um8fCQlAgv0gxQHUImGdgMe8JFChURElVl8q6rj+tVJ6pioIiE8ueAB9QxUq5XGOtGobxfG3NqlqIvNcZQwJ0Q1bNL2p9vVwlZH0dKHJSmYwLqNeFaDTwqnalDTrkNXJ8UfW6C0inhdjcxBsHUNsyjLfvrMdrNu8OcAWahvdOgAunKrY5FhjYATRPoNWygBUnsEsp0eA1hGi17g40m0Jks9hz+D9QRh+hcUam6QLabeqkIvYPbPvh4ZZxdHSMapWAdtsFnJxwaTlM67rl/0Sf/3x62r8ir9YYGpAkkwJfuL2/fusXXOmUSuCEhLsxWHMcwhgPTrfb/d7p8ADhhgGyJujaxI3/fTTfLWCa15dADPhB/oKff3iApiL3/yIThZv8knSGZNLeM7MKcO63k2z1ftIyTsVJiYSCSGSA/RaA9Ovi4uqH0usNBki/w6zLy4C/rAe59QepmHZAEzYCoAAAAABJRU5ErkJggg==')
+            this.textures.addBase64('sprites2', 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADwAAAA8CAMAAAANIilAAAAAAXNSR0IB2cksfwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAmdQTFRFAAAANDQ0NTU1NTU1NDQ0NDQ0NTU1NTU1NTU1TVlcfqGqeJigVWVpl8fTj7vGMzMzNDQ0NTU1NTU1NTU1NTU1NTU1NTU1NTU1NTU1NTU1NDQ0NDQ0NDQ0NTU1NTU1NTU1NDQ0MTExNDQ0NTU1NTU1MjIyNDQ0NTU1Rk5RdpWdjrrFksDLgqiyRUxOTFdakr/LjLfCfJ6nWGluNjY2NTU1NDQ0SVNVjLbBhq64RU1PlcPPZn6FNTU1NDQ0NDQ0S1VYjbjDlsbSZn+FNTU1NTU1eJmhjrnEPEBBNTU1NTU1PkJDkLzHSlRXMjIyNTU1RExOlsXRNDQ0gaava4WMSlVYdpaeQEVGcY6VfqKrVmZqk8HMXnJ3Zn6EYHV6Nzg4h6+5i7W/OTs8UF1gUV9iNjc3ibG8gaewNTU1QklLlMPORk5QMTExNTU1Oj09i7XAOz4/NTU1NTU1aIKIbIeONTU1NDQ0PD9AepylfaCpODo7NDQ0QEZHirO9NDQ0Li4uMzMzNTU1XHB1c5GYdZWddJObc5Kaco+XcY6WcI2Ub4yTbouSbomQbYiPbIeNaoSLaYOJaYKIaIGHZ3+FZX2DZHyCZHuBY3qAY3l/Ynh+Ynh9YXd8YXZ7WmxxR1BSNTU1NDQ0NTU1NTU1NDQ0MzMzNTU1NTU1NTU1MzMzNDQ0NDQ0NDQ0NTU1NTU1NTU1NTU1NTU1NTU1NTU1NTU1NTU1NDQ0NTU1NTU1NTU1NTU1NTU1NTU1NTU1NDQ0NTU1NDQ0NDQ0NTU1NTU1NDQ0NTU1NTU1NDQ0NDQ0NDQ0NDQ0NDQ0MzMzMzMzMDAw1YXQeQAAAM10Uk5TABmTe24r/9XA////////CVievMjJ0vbxuaNmFyin/tRaAj/rlwUp6f///////////////48H////////+jtl/////62s////8t////8Q+P//Ff///////////////////////////+3///8Izf///+eU//+iMP////9B//+xAwvC///////////////////////////////////////LEdPDEh7w+WcMHFZyfn16eHZ0cW9ta2lmZGJgXlxXVlRTUlBPTUxKSUdGOA4RAc6iHW8AAAH3SURBVHicY2AYHoCRCQGYGViQeIyENbOyIQA7AwcSj5X2mjm5wACqmRvM4SRWMw8vGEA184E5PMNTM7+AoJCwiCiSZjERcSTNoiLCEpJS0lj1ysjKQeMErhkM4JohQF5BEVOvkjI8QvFqZpNTUUXXq6bOxqahqaWtrYOkWVdbD0mzjra+gaGRMRubCZpeU2DImJmDVFkgabbk5UTSbAGirayN2WxsUTXbsbHZO/ASoZnX0YmNzRlVswsbmysvUZp53dzZPFA1e7J5eROpmdeHjc0XRbMfm38AsZqBYoEomkEKwSAomI0tJBQM2NjCQi3Z2MLBnBA2tuCIAAKaI9lwA84oGmuOjsEGYuOI0hzPiw0kJI5qHtU8qnlU86hmfJqTeLCB5BTaF/rka05Nww3iHbFrTmfLyMQaTpggIItNLhtFcw5bbh6Rmg3y2QpQ9DIUsrEVEam5mI2tBFVzqQ1bWTlReisq2eSqUDUzqLCxVdcQoTcijI2ttg5Nc30DG1tiY1Noc0trU1t7R2dXd09vcF//hImTYmImT5k6bfqMmbNmx86ZC4yxefMZ0EHgAjwxjAwWLsLQy8Cw2GQJYZ1LFyxbjkUvEKxYuWr1mrXr1m/YuGnzlq3btu/YuWu3wp69+/YfOHjo8JGjx46fOKl26vQZ7JpJBgAr0/39teW4hAAAAABJRU5ErkJggg==')
+            this.textures.addBase64('sprites3', 'data:image/png;base64,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')
+            this.textures.addBase64('sprites4', 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADwAAAA8CAMAAAANIilAAAAAAXNSR0IB2cksfwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAHhQTFRFAAAANTU1AIoAMDAwNTU1NTU1NTU1NDU0MDAwNDQ0IVQhE2oTCXoJMToxDXQNNDQ0Lj8uA4QDEG8QNTU1HVodMTkxHVkdIVUhJ0onDXUNNTU1J0knNDQ0NDQ0NDQ0NTU1NTU1NTU1NTU1NTU1NTU1NTU1NTU1NDQ0zvyiqwAAACh0Uk5TAP//IG+fz/AQv///////cP///6D////////Q//DAAwoOFRgZGxoIAX0fAf0AAAFpSURBVHic7ZbrboMwDIVxoNwSYIECLYVdu+3933BRoYCTGCG1naa151eQ8ynGdpTjOP9LMOnXYdbrAd8Gdr2NP+vQCI/yN55LsF4ASCasFHg2NIwAYi4YGxl9wZjgMUAUmnAEScpmssFKaQKRwWbwJNkKmMkEMr1WAaBzaZjlELj6wTFbCbNYP7oAvhrmUGDYB7EaFuBj2NixABszd6+w3Jb98JdbqcMoZoOr6e5UOoxiNrg891pAqcMoZoOnn0NfpwWKPeArwBe16qIhkdV5BCtzPOexv3Wr7hbO6x0Q2tX5MlxTZK96EQbgKX4tR8mUD7to2E6i6I1gvqfS3lNpN8OVW1MwAQ2Gx/c5rw8UeRhaZbzPpjOgZTgDt9U9CakcWt3JZZAQhdLrZrohx+k0H0adm0BnsE7YqWJy3ZlgCa660VkcoMq8Xe7TSa2Z81C1rGgWyabIKNer9Pzy+vb+cTx+fn3Tm66kH1SKGhX9KUQKAAAAAElFTkSuQmCC')
+            this.textures.addBase64('sprites5', 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADwAAAA8CAMAAAANIilAAAAAAXNSR0IB2cksfwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAFRQTFRFAAAANTU1//8AMDAwNTU1NDQ0NDQ0MzMzNTU0NDQ0c3MkpqYXzMwNQEAxsrIT2NgJNDQ0NDQ0MzMzNDQ0zc0NdHQkZmYnMjIyNDQ0QUExNDQ0p6cX+DXwgwAAABx0Uk5TAP//EG+Pv1Dwr////////+9wkMD///9g8P+w/53OA/wAAAETSURBVHic7dbZbsMgEAVQ7pDEC16Kl9bL//9n7RATQzAmrfpQifvgoDAng6xIDGMx/z945Admj8N/ZUdoybtYE9qvTjC/XG9rh3vlY/FcrR+364W7bZLCqHTgJWniapsBuSjWIlKPDe++KkQOZK/NM5QVbdVHeElVIns5M8qaQjDVJayT8xSq7zmmCh/mwSVyCsWUQxq4gQjHAo2BWxThuEBr4OdOALb/bHoH3vwtpsNEHHHEEUcc8e+wvmKB7jAbtq9YfbmHXHT25S7Rq41Pb1RNjy8D80EPNKcRGKxJLMFYh9l6tEcpxiaMQb3nEZNtGZ+Afu78spt7YHLNrsngf9Uqg2twXZvLpvXLtpEHI/P7+QbxERidNm8EHgAAAABJRU5ErkJggg==');
+            this.textures.addBase64('sprites6', 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADwAAAA8CAMAAAANIilAAAAAAXNSR0IB2cksfwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAV9QTFRFAAAAdIuOdYyNdYyOc4yOdYyOdYyOdYyOc4yOdIyOdYyOfZaYhZ+hc4yOdIyOdYyOfpaZlrO2lLG0lq2vmqipm6anlq2wdYyOfpeZo8PGnqGhn5+fosLFmKqsqqqqubm5sbGxy8vLurq6dYuOdYuOqKiotra2iaSmkqKjhJ6hdYyOiZ2fd3x8cnJyhISEeHx9e4KDeXl5h4eHnZ2dpaWleX9/k5OTlZWVnp6elpaWlJSUYmJi/wAAmpqafoiJfHx8l5eXkauukpKSmZmZkq2weoCBenp6kJCQdXl6kZGRm5ubh5+hd35+e3t7hZudfn5+nJychp6ggoKCf46Qf39/gJCRdYyOdYyOg5yfmrm8hpiajIyMdI2PdYyOdYyOg52gdYyNdYyOdYyOhJ6gmrm7dYyNdYyOmri7dYyOdYyOhoaGhYWFdYyNi6GjdXd3ip+hgIuMdYyOdIyOdIuNdIyOYEyRTQAAAHV0Uk5TABo/XiKQ0P8kmvf//yab8//////////x//////////////9K4f//////Xf////////////////////////////////////////////////////////9R6/////8qq/r/Obr4//89uf+49v//QP////+z9C9Wmbi0SgAAAqhJREFUeJzt1mlT2kAcgPGIoBBUCLUqJh6tWkVZakUJ0KqICIJBBS8iyqmIeNXj+083myCYZDfMdHzH8wadzW/YHPMPFNXtP+ox9RIz9eCt2dLXT6zPYsZZq422DxCz0zarvh0ccjgZl9SX4a+qhkfQAuN0DA3q29Exxi0dMjLOahpH2s2MjeppZDmEJ9jJKVWT7ATCnK62ylbB099UTStY1qrzNtscyBpiSTtsH655j4V2Itvc9ndVk+8Yaidtab/fM7N2xu1u4bkfquZa2O1m7LMzbbi3f8AlNw9b0MML0opykKd/UYuXvEDKp4d9aOnnEhYvg19SK/7VaVWr/hW0BJaxeA0EUHxQ/YwEeXkFrBnhkF/7hPlDnWFex0LNd4K1e27buQEOYSzUISMcxlqow2Ss7Pm3JmXnRKxcKwxm/UTMNvGfDzUx28WfgvVv1SfidfzDKbVOwBtgM0J6tiObYAOLt+Acim7j7HYUTqEtLHbFdkA8Edbd+3o4EQc7Mfz0hHoXxJMBPqWmKT6QjIPdGGH0wvYEkE7AkZBqO/cgpIFEGgh7pLktDf19ARxAHYgcNu1hBP6bOADCPnHoozdGxgvSydYQlcdmMg28GfIbA+H5jACyaM6GeVgY/ZkFQsbgdSPj+SNwHFB1DI6M3lUKPtHDJ1h8epYTW6/YcwlH8/k8PPUE/IhK+FxakY8Rc2enbfjislAUuc4wJxYLlxdtmCqVK9UrrhPMXVUr5RL1oesa7bnhjDF346Fr15QqU/3WI3IKjjcad9ls1tdo+ODHXaMRVzB35bmtm9SWou7rdFVE+OERaHp8QFis0vV7rYXfXasURXQrnv5qekILYrFS0/ledN7lQs5DLFcoa873/Zo/v5B/Mr88l3CWol7fFom9veJtN+P+AWkyUJeHX5RfAAAAAElFTkSuQmCC');
+            this.textures.addBase64('bullet', 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABYAAAALCAYAAAB7/H1+AAAAAXNSR0IArs4c6QAAALFJREFUOE9j/LPB4f+12V8YBNRZGKTsOBjIAozMDAwiOmks1hNng/T///+fmZEqBsNcw8w5hcV3e+7////ZqGswyLXs/JNYLNrmU91gkOMZxa36aWIwA7sAA20MZmSmkcEcwl9o4mJGaUcaRB6XyCpmk64p1HUxG+8RZsPCGgYJxwuMfzY6QnMeK4OUHTuWjPcfIfYfymZkRFLHxMDAxsfAKGy0jEk9MZeBT+YzIyPjbwArj120GihEZwAAAABJRU5ErkJggg==');
+            this.textures.addBase64('rocket', 'data:image/png;base64,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');
+            this.textures.addBase64('trash', 'data:image/png;base64,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');
+            this.textures.addBase64("bullet2", "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAAALCAMAAAAN+jK2AAAAAXNSR0IB2cksfwAAAAlwSFlzAAALEwAACxMBAJqcGAAAADZQTFRFAAAA/6oB/6wG/6wH/6oA/8FD/8NJ/8BB/6sE/8VQ/8JH/6sE/7gq/7ou/7gp/6sC/6oA/6oA6MC6EQAAABJ0Uk5TAP///+/////v////////76qgP+N9vgAAAD5JREFUeJxjYBgFgwwwMjEPA8DEwsDEyjYMADsHAzMb5zAAXKMeGWQA6BFuHt5hAPj4GQSGBxAc6NJ/FKADADexMqoUjr1MAAAAAElFTkSuQmCC");
+            this.load.spritesheet('plane', 'static/assets/plane.png', { frameWidth: 64, frameHeight: 64 });
+            this.textures.addBase64('planeicon', 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAAHdbkFIAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyFpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuNS1jMDIxIDc5LjE1NDkxMSwgMjAxMy8xMC8yOS0xMTo0NzoxNiAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENDIChXaW5kb3dzKSIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDpFMEI1QjRGRTU1NzYxMUU2QjMzNkQ2MTk5MTAxNjJCRiIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDpFMEI1QjRGRjU1NzYxMUU2QjMzNkQ2MTk5MTAxNjJCRiI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuaWlkOkUwQjVCNEZDNTU3NjExRTZCMzM2RDYxOTkxMDE2MkJGIiBzdFJlZjpkb2N1bWVudElEPSJ4bXAuZGlkOkUwQjVCNEZENTU3NjExRTZCMzM2RDYxOTkxMDE2MkJGIi8+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+bAjzRgAACG5JREFUeNpi/P//PwNe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')
+            this.load.audio('laser', ['static/assets/laser.mp3']);
+            this.load.audio('gunshot', ['static/assets/shot.mp3']);
+            this.load.audio('sniper', ['static/assets/sniper.mp3']);
+            this.load.audio('gatling', ['static/assets/gatling.mp3']);
+            this.load.audio('explode', ['static/assets/explode.mp3']);
+            this.load.audio('silenced', ['static/assets/silenced gunshot.mp3']);
+        }
+        var Enemy = new Phaser.Class({
+
+                Extends: Phaser.GameObjects.Image,
+
+                initialize:
+
+                function Enemy (scene)
+                {
+
+                    Phaser.GameObjects.Image.call(this, scene, 0, 0, 'sprites');
+
+                    this.follower = { t: 0, vec: new Phaser.Math.Vector2() };
+                    this.hp = 0;
+                },
+
+                startOnPath: function ()
+                {
+                    this.follower.t = 0;
+                    this.hp = starthp;
+
+                    path.getPoint(this.follower.t, this.follower.vec);
+
+                    this.setPosition(this.follower.vec.x, this.follower.vec.y);
+                },
+                receiveDamage: function(damage) {
+                    this.hp -= damage;
+                    coins += (damage/25);
+                    coinsdisplay = ~~coins;
+                    coinsText.setText('Score: ' + coinsdisplay);
+
+                    // if hp drops below 0 we deactivate this enemy
+                    if(this.hp <= 0) {
+                        coins += 10;
+                        coinsdisplay = ~~coins;
+                        coinsText.setText('Score: ' + coinsdisplay);
+                        if (!(spawntime < 500)) {
+                            spawntime -= 50
+                        }
+                        else{
+                            ENEMY_SPEED += 1/100000;
+                            spawntime = 2000
+                            starthp += 100
+                            difficultytext += 1
+                            difficulty.setText('Level: ' + difficultytext);
+                        }
+                        this.setActive(false);
+
+                        this.setVisible(false);
+                    }
+                },
+                update: function (time, delta)
+                {
+                    this.follower.t += ENEMY_SPEED * delta;
+                    path.getPoint(this.follower.t, this.follower.vec);
+                    angle1 = Phaser.Math.Angle.Between(this.x, this.y, this.follower.vec.x, this.follower.vec.y);
+                    this.setRotation(angle1);
+                    this.setPosition(this.follower.vec.x, this.follower.vec.y);
+
+                    if (this.follower.t >= 1)
+                    {
+                        this.setActive(false);
+                        this.setVisible(false);
+                        reached_end()
+                    }
+                }
+
+        });
+
+        function getEnemy(x, y, distance) {
+            var enemyUnits = enemies.getChildren();
+            for(var i = 0; i < enemyUnits.length; i++) {
+                if(enemyUnits[i].active && Phaser.Math.Distance.Between(x, y, enemyUnits[i].x, enemyUnits[i].y) < distance)
+                    return enemyUnits[i];
+            }
+            return false;
+        }
+
+        var Turret = new Phaser.Class({
+
+                Extends: Phaser.GameObjects.Image,
+
+                initialize:
+
+                function Turret (scene)
+                {
+                    Phaser.GameObjects.Image.call(this, scene, 0, 0, 'sprites0');
+                    this.setInteractive()
+                    this.nextTic = 0;
+                },
+                place: function(i, j) {
+                    if (trashstatus=="normal"){
+                        this.y = i * 64 + 64/2;
+                        this.x = j * 64 + 64/2;
+                        map[i][j] = 1;
+                    }
+                },
+                unplace: function(i, j) {
+                    this.y = i * 64 + 64/2;
+                    this.x = j * 64 + 64/2;
+                    map[i][j] = 0;
+                    coins += 50;
+                    coinsdisplay = ~~coins;
+                    coinsText.setText('Score: ' + coinsdisplay);
+                },
+                fire: function() {
+                    var enemy = getEnemy(this.x, this.y, 150);
+                    if(enemy) {
+                        var angle = Phaser.Math.Angle.Between(this.x, this.y, enemy.x, enemy.y);
+                        addBullet(this.x, this.y, angle);
+                        this.angle = (angle + Math.PI/2) * Phaser.Math.RAD_TO_DEG;
+                    }
+                },
+                update: function (time, delta)
+                {
+                    if(time > this.nextTic) {
+                        this.fire();
+                        this.nextTic = time + 500;
+                    }
+
+                    this.on('pointerup', function (pointer) {
+                        (pointer.leftButtonReleased())
+                        {
+                            if (lastClick >= (Date.now() - delay))
+                                return;
+                            lastClick = Date.now();
+                            if (trashstatus=="selected"){
+                                console.log(trashstatus)
+                                this.setActive(false);
+                                this.setVisible(false);
+                                var i = Math.floor(pointer.y/64);
+                                var j = Math.floor(pointer.x/64);
+                                setTimeout(this.unplace(i,j), 10);
+                            }
+                        }
+                    });
+
+
+                }
+        });
+
+        var Turret2 = new Phaser.Class({
+
+                Extends: Phaser.GameObjects.Image,
+
+                initialize:
+
+                function Turret2 (scene)
+                {
+                    Phaser.GameObjects.Image.call(this, scene, 0, 0, 'sprites2', 'turret');
+                    this.setInteractive()
+                    this.nextTic = 0;
+                },
+                place: function(i, j) {
+                    if (trashstatus=="normal"){
+                        this.y = i * 64 + 64/2;
+                        this.x = j * 64 + 64/2;
+                        map[i][j] = 1;
+                    }
+                },
+                unplace: function(i, j) {
+                    this.y = i * 64 + 64/2;
+                    this.x = j * 64 + 64/2;
+                    map[i][j] = 0;
+                    coins += 100;
+                    coinsdisplay = ~~coins;
+                    coinsText.setText('Score: ' + coinsdisplay);
+                },
+                fire1: function() {
+                    var enemy = getEnemy(this.x, this.y, 300);
+                    if(enemy) {
+                        var angle = Phaser.Math.Angle.Between(this.x, this.y, enemy.x, enemy.y);
+                        addBullet5(this.x, this.y, angle);
+                        this.angle = (angle + Math.PI/2) * Phaser.Math.RAD_TO_DEG;
+                    }
+                },
+
+                fire2: function() {
+                    var enemy = getEnemy(this.x, this.y, 400);
+                    if(enemy) {
+                        var angle = Phaser.Math.Angle.Between(this.x, this.y, enemy.x, enemy.y);
+                        addBullet6(this.x, this.y, angle);
+                        this.angle = (angle + Math.PI/2) * Phaser.Math.RAD_TO_DEG;
+                    }
+                },
+
+                update: function (time, delta)
+                {
+                    if(time > this.nextTic) {
+                        this.fire1();
+                        this.fire2();
+                        this.nextTic = time + 750;
+                    }
+                    this.on('pointerup', function (pointer) {
+                        (pointer.leftButtonReleased())
+                        {
+                            if (lastClick >= (Date.now() - delay))
+                                return;
+                            lastClick = Date.now();
+                            if (trashstatus=="selected"){
+                                this.setActive(false);
+                                this.setVisible(false);
+                                var i = Math.floor(pointer.y/64);
+                                var j = Math.floor(pointer.x/64);
+                                this.unplace(i, j)
+                            }
+                        }
+                    });
+                }
+        });
+        var Turret3 = new Phaser.Class({
+
+                Extends: Phaser.GameObjects.Image,
+
+                initialize:
+
+                function Turret3 (scene)
+                {
+                    Phaser.GameObjects.Image.call(this, scene, 0, 0, 'sprites3', 'turret');
+                    this.setInteractive()
+                    this.nextTic = 0;
+                },
+                place: function(i, j) {
+                    if (trashstatus=="normal"){
+                        this.y = i * 64 + 64/2;
+                        this.x = j * 64 + 64/2;
+                        map[i][j] = 1;
+                    }
+                },
+                unplace: function(i, j) {
+                    this.y = i * 64 + 64/2;
+                    this.x = j * 64 + 64/2;
+                    map[i][j] = 0;
+                    coins += 150;
+                    coinsdisplay = ~~coins;
+                    coinsText.setText('Score: ' + coinsdisplay);
+                },
+                fire: function() {
+                    var enemy = getEnemy(this.x, this.y, 500);
+                    if(enemy) {
+                        var angle = Phaser.Math.Angle.Between(this.x, this.y, enemy.x, enemy.y);
+                        addBullet2(this.x, this.y, angle);
+                        this.angle = (angle + Math.PI/2) * Phaser.Math.RAD_TO_DEG;
+                    }
+                },
+                update: function (time, delta)
+                {
+                    if(time > this.nextTic) {
+                        this.fire();
+                        this.nextTic = time + 500;
+                    this.on('pointerup', function (pointer) {
+                        (pointer.leftButtonReleased())
+                        {
+                            if (lastClick >= (Date.now() - delay))
+                                return;
+                            lastClick = Date.now();
+                            if (trashstatus=="selected"){
+                                this.setActive(false);
+                                this.setVisible(false);
+                                var i = Math.floor(pointer.y/64);
+                                var j = Math.floor(pointer.x/64);
+                                this.unplace(i, j)
+                            }
+                        }
+                    });
+                    }
+                }
+        });
+        var Turret4 = new Phaser.Class({
+
+                Extends: Phaser.GameObjects.Image,
+
+                initialize:
+
+                function Turret4 (scene)
+                {
+                    Phaser.GameObjects.Image.call(this, scene, 0, 0, 'sprites4', 'turret');
+                    this.setInteractive()
+                    this.nextTic = 0;
+                },
+                place: function(i, j) {
+                    if (trashstatus=="normal"){
+                        this.y = i * 64 + 64/2;
+                        this.x = j * 64 + 64/2;
+                        map[i][j] = 1;
+                    }
+                },
+                unplace: function(i, j) {
+                    this.y = i * 64 + 64/2;
+                    this.x = j * 64 + 64/2;
+                    map[i][j] = 0;
+                    coins += 200;
+                    coinsdisplay = ~~coins;
+                    coinsText.setText('Score: ' + coinsdisplay);
+                },
+                fire: function() {
+                    var enemy = getEnemy(this.x, this.y, 1000);
+                    if(enemy) {
+                        var angle = Phaser.Math.Angle.Between(this.x, this.y, enemy.x, enemy.y);
+                        addBullet3(this.x, this.y, angle);
+                        this.angle = (angle + Math.PI/2) * Phaser.Math.RAD_TO_DEG;
+                    }
+                },
+                update: function (time, delta)
+                {
+                    if(time > this.nextTic) {
+                        this.fire();
+                        this.nextTic = time + 5000;
+                    }
+                    this.on('pointerup', function (pointer) {
+                        (pointer.leftButtonReleased())
+                        {
+                            if (lastClick >= (Date.now() - delay))
+                                return;
+                            lastClick = Date.now();
+                            if (trashstatus=="selected"){
+                                this.setActive(false);
+                                this.setVisible(false);
+                                var i = Math.floor(pointer.y/64);
+                                var j = Math.floor(pointer.x/64);
+                                this.unplace(i, j)
+                            }
+                        }
+                    });
+                }
+        });
+
+        var Turret5 = new Phaser.Class({
+
+                Extends: Phaser.GameObjects.Image,
+
+                initialize:
+
+                function Turret5 (scene)
+                {
+                    Phaser.GameObjects.Image.call(this, scene, 0, 0, 'sprites5');
+                    this.setInteractive()
+                    this.nextTic = 0;
+                },
+                place: function(i, j) {
+                    if (trashstatus=="normal"){
+                        this.y = i * 64 + 64/2;
+                        this.x = j * 64 + 64/2;
+                        map[i][j] = 1;
+                    }
+                },
+                unplace: function(i, j) {
+                    this.y = i * 64 + 64/2;
+                    this.x = j * 64 + 64/2;
+                    map[i][j] = 0;
+                    coins += 250;
+                    coinsdisplay = ~~coins;
+                    coinsText.setText('Score: ' + coinsdisplay);
+                },
+                fire: function() {
+                    var enemy = getEnemy(this.x, this.y, 150);
+                    if(enemy) {
+                        var angle = Phaser.Math.Angle.Between(this.x, this.y, enemy.x, enemy.y);
+                        addBullet4(this.x, this.y, angle);
+                        this.angle = (angle + Math.PI/2) * Phaser.Math.RAD_TO_DEG;
+                    }
+                },
+                update: function (time, delta)
+                {
+                    if(time > this.nextTic) {
+                        this.fire();
+                        this.nextTic = time + gatlingcd;
+                    }
+                    this.on('pointerup', function (pointer) {
+                        (pointer.leftButtonReleased())
+                        {
+                            if (lastClick >= (Date.now() - delay))
+                                return;
+                            lastClick = Date.now();
+                            if (trashstatus=="selected"){
+                                this.setActive(false);
+                                this.setVisible(false);
+                                var i = Math.floor(pointer.y/64);
+                                var j = Math.floor(pointer.x/64);
+                                this.unplace(i, j)
+                            }
+                        }
+                    });
+                }
+        });
+
+        var Turret6 = new Phaser.Class({
+
+                Extends: Phaser.GameObjects.Image,
+
+                initialize:
+
+                function Turret6 (scene)
+                {
+                    Phaser.GameObjects.Image.call(this, scene, 0, 0, 'sprites6')
+                    this.nextTic = 0;
+                },
+                place: function(i, j) {
+                    if (trashstatus=="normal"){
+                        this.y = i * 64 + 64/2;
+                        this.x = j * 64 + 64/2;
+                        map[i][j] = 1;
+                    }
+                },
+                unplace: function(i, j) {
+                    this.y = i * 64 + 64/2;
+                    this.x = j * 64 + 64/2;
+                    map[i][j] = 0;
+                    coins += 300;
+                    coinsdisplay = ~~coins;
+                    coinsText.setText('Score: ' + coinsdisplay);
+                },
+                fire: function() {
+                    var enemy = getEnemy(this.x, this.y, 150);
+                    if(enemy) {
+                        var angle = Phaser.Math.Angle.Between(this.x, this.y, enemy.x, enemy.y);
+                        addBullet7(this.x, this.y, angle);
+                        this.angle = (angle + Math.PI/2) * Phaser.Math.RAD_TO_DEG;
+                    }
+                },
+                update: function (time, delta)
+                {
+                    if(time > this.nextTic) {
+                        this.fire();
+                        this.nextTic = time + 2000;
+                    }
+                    this.on('pointerup', function (pointer) {
+                        (pointer.leftButtonReleased())
+                        {
+                            if (lastClick >= (Date.now() - delay))
+                                return;
+                            lastClick = Date.now();
+                            if (trashstatus=="selected"){
+                                this.setActive(false);
+                                this.setVisible(false);
+                                var i = Math.floor(pointer.y/64);
+                                var j = Math.floor(pointer.x/64);
+                                this.unplace(i, j)
+                            }
+                        }
+                    });
+                }
+        });
+
+        var Turret7 = new Phaser.Class({
+
+                Extends: Phaser.GameObjects.Sprite,
+
+                initialize:
+
+                function Turret7 (scene)
+                {
+                    Phaser.GameObjects.Sprite.call(this, scene, 0, 0, 'sprites0');
+                    this.setScale(3);
+                    this.anims.play('plane_animation');
+                    this.setInteractive()
+                    this.nextTic = 0;
+                },
+                place: function(i, j) {
+                    if (trashstatus=="normal"){
+                        this.y = i * 64 + 64/2;
+                        this.x = j * 64 + 64/2;
+                        map[i][j] = 1;
+                    }
+                },
+                unplace: function(i, j) {
+                    this.y = i * 64 + 64/2;
+                    this.x = j * 64 + 64/2;
+                    map[i][j] = 0;
+                    coins += 350;
+                    coinsdisplay = ~~coins;
+                    coinsText.setText('Score: ' + coinsdisplay);
+                },
+                fire: function() {
+                    silenced.play();
+                    var enemy = getEnemy(this.x, this.y, 150);
+                    if(enemy) {
+                        var angle = Phaser.Math.Angle.Between(this.x, this.y, enemy.x, enemy.y);
+                        addBullet(this.x, this.y, angle);
+                        this.angle = (angle + Math.PI/2) * Phaser.Math.RAD_TO_DEG;
+                    }
+                },
+                update: function (time, delta)
+                {
+                    if(time > this.nextTic) {
+                        this.fire();
+                        this.nextTic = time + 200;
+                    }
+                    this.on('pointerup', function (pointer) {
+                        (pointer.leftButtonReleased())
+                        {
+                            if (lastClick >= (Date.now() - delay))
+                                return;
+                            lastClick = Date.now();
+                            if (trashstatus=="selected"){
+                                this.setActive(false);
+                                this.setVisible(false);
+                                var i = Math.floor(pointer.y/64);
+                                var j = Math.floor(pointer.x/64);
+                                this.unplace(i, j)
+                            }
+                        }
+                    });
+                }
+        });
+        var Bullet = new Phaser.Class({
+
+                Extends: Phaser.GameObjects.Image,
+
+                initialize:
+
+                function Bullet (scene)
+                {
+                    Phaser.GameObjects.Image.call(this, scene, 0, 0, 'bullet');
+
+                    this.incX = 0;
+                    this.incY = 0;
+                    this.lifespan = 0;
+
+                    this.speed = Phaser.Math.GetSpeed(500, 1);
+                },
+
+                fire: function (x, y, angle)
+                {
+                    gunshot.play();
+                    this.setActive(true);
+                    this.setVisible(true);
+                    //  Bullets fire from the middle of the screen to the given x/y
+                    this.setPosition(x, y);
+
+                //  we don't need to rotate the bullets as they are round
+                    this.setRotation(angle);
+
+                    this.dx = Math.cos(angle);
+                    this.dy = Math.sin(angle);
+
+                    this.lifespan = 1000;
+                },
+
+                update: function (time, delta)
+                {
+                    this.lifespan -= delta;
+
+                    this.x += this.dx * (this.speed * delta);
+                    this.y += this.dy * (this.speed * delta);
+
+                    if (this.lifespan <= 0)
+                    {
+                        this.setActive(false);
+                        this.setVisible(false);
+                    }
+                }
+
+            });
+
+        var Bullet2 = new Phaser.Class({
+
+                Extends: Phaser.GameObjects.Image,
+
+                initialize:
+
+                function Bullet2 (scene)
+                {
+                    Phaser.GameObjects.Image.call(this, scene, 0, 0, 'bullet2');
+
+                    this.incX = 0;
+                    this.incY = 0;
+                    this.lifespan = 0;
+
+                    this.speed = Phaser.Math.GetSpeed(1000, 1);
+                },
+
+                fire: function (x, y, angle)
+                {
+                    laser_fire.play();
+                    this.setActive(true);
+                    this.setVisible(true);
+                    //  Bullets fire from the middle of the screen to the given x/y
+                    this.setPosition(x, y);
+
+                //  we don't need to rotate the bullets as they are round
+
+                    this.setRotation(angle);
+
+                    this.dx = Math.cos(angle);
+                    this.dy = Math.sin(angle);
+
+                    this.lifespan = 1000;
+                },
+
+                update: function (time, delta)
+                {
+                    this.lifespan -= delta;
+
+                    this.x += this.dx * (this.speed * delta);
+                    this.y += this.dy * (this.speed * delta);
+
+                    if (this.lifespan <= 0)
+                    {
+                        this.setActive(false);
+                        this.setVisible(false);
+                    }
+                }
+
+            });
+        var Bullet3 = new Phaser.Class({
+
+                Extends: Phaser.GameObjects.Image,
+
+                initialize:
+
+                function Bullet3 (scene)
+                {
+                    Phaser.GameObjects.Image.call(this, scene, 0, 0, 'bullet');
+
+                    this.incX = 0;
+                    this.incY = 0;
+                    this.lifespan = 0;
+
+                    this.speed = Phaser.Math.GetSpeed(5000, 1);
+                },
+
+                fire: function (x, y, angle)
+                {
+                    sniper.play();
+                    this.setActive(true);
+                    this.setVisible(true);
+                    //  Bullets fire from the middle of the screen to the given x/y
+                    this.setPosition(x, y);
+
+                //  we don't need to rotate the bullets as they are round
+                    this.setRotation(angle);
+
+                    this.dx = Math.cos(angle);
+                    this.dy = Math.sin(angle);
+
+                    this.lifespan = 1000;
+                },
+
+                update: function (time, delta)
+                {
+                    this.lifespan -= delta;
+
+                    this.x += this.dx * (this.speed * delta);
+                    this.y += this.dy * (this.speed * delta);
+
+                    if (this.lifespan <= 0)
+                    {
+                        this.setActive(false);
+                        this.setVisible(false);
+                    }
+                }
+
+            });
+
+        var Bullet4 = new Phaser.Class({
+
+                Extends: Phaser.GameObjects.Image,
+
+                initialize:
+
+                function Bullet4 (scene)
+                {
+                    Phaser.GameObjects.Image.call(this, scene, 0, 0, 'bullet');
+
+                    this.incX = 0;
+                    this.incY = 0;
+                    this.lifespan = 0;
+
+                    this.speed = Phaser.Math.GetSpeed(700, 1);
+                },
+
+                fire: function (x, y, angle)
+                {
+                    gatling.play();
+                    this.setActive(true);
+                    this.setVisible(true);
+                    //  Bullets fire from the middle of the screen to the given x/y
+                    this.setPosition(x, y);
+
+                //  we don't need to rotate the bullets as they are round
+                    this.setRotation(angle);
+
+                    this.dx = Math.cos(angle);
+                    this.dy = Math.sin(angle);
+
+                    this.lifespan = 1000;
+                },
+
+                update: function (time, delta)
+                {
+                    this.lifespan -= delta;
+
+                    this.x += this.dx * (this.speed * delta);
+                    this.y += this.dy * (this.speed * delta);
+
+                    if (this.lifespan <= 0)
+                    {
+                        this.setActive(false);
+                        this.setVisible(false);
+                    }
+                }
+            });
+
+
+        var Bullet5 = new Phaser.Class({
+
+                Extends: Phaser.GameObjects.Image,
+
+                initialize:
+
+                function Bullet5 (scene)
+                {
+                    Phaser.GameObjects.Image.call(this, scene, 0, 0, 'bullet');
+
+                    this.incX = 0;
+                    this.incY = 0;
+                    this.lifespan = 0;
+
+                    this.speed = Phaser.Math.GetSpeed(500, 1);
+                },
+
+                fire: function (x, y, angle)
+                {
+                    gunshot.play();
+                    this.setActive(true);
+                    this.setVisible(true);
+                    //  Bullets fire from the middle of the screen to the given x/y
+                    this.setPosition(x+10, y);
+
+                //  we don't need to rotate the bullets as they are round
+                    this.setRotation(angle);
+
+                    this.dx = Math.cos(angle);
+                    this.dy = Math.sin(angle);
+
+                    this.lifespan = 1000;
+                },
+
+                update: function (time, delta)
+                {
+                    this.lifespan -= delta;
+
+                    this.x += this.dx * (this.speed * delta);
+                    this.y += this.dy * (this.speed * delta);
+
+                    if (this.lifespan <= 0)
+                    {
+                        this.setActive(false);
+                        this.setVisible(false);
+                    }
+                }
+            });
+        var Bullet6 = new Phaser.Class({
+
+                Extends: Phaser.GameObjects.Image,
+
+                initialize:
+
+                function Bullet6 (scene)
+                {
+                    Phaser.GameObjects.Image.call(this, scene, 0, 0, 'bullet');
+
+                    this.incX = 0;
+                    this.incY = 0;
+                    this.lifespan = 0;
+
+                    this.speed = Phaser.Math.GetSpeed(500, 1);
+                },
+
+                fire: function (x, y, angle)
+                {
+                    gunshot.play();
+                    this.setActive(true);
+                    this.setVisible(true);
+                    //  Bullets fire from the middle of the screen to the given x/y
+                    this.setPosition(x-10, y);
+
+                //  we don't need to rotate the bullets as they are round
+                    this.setRotation(angle);
+
+                    this.dx = Math.cos(angle);
+                    this.dy = Math.sin(angle);
+
+                    this.lifespan = 1000;
+                },
+
+                update: function (time, delta)
+                {
+                    this.lifespan -= delta;
+
+                    this.x += this.dx * (this.speed * delta);
+                    this.y += this.dy * (this.speed * delta);
+
+                    if (this.lifespan <= 0)
+                    {
+                        this.setActive(false);
+                        this.setVisible(false);
+                    }
+                }
+            });
+
+
+        var Bullet7 = new Phaser.Class({
+
+                Extends: Phaser.GameObjects.Image,
+
+                initialize:
+
+                function Bullet7 (scene)
+                {
+                    Phaser.GameObjects.Image.call(this, scene, 0, 0, 'rocket');
+
+                    this.incX = 0;
+                    this.incY = 0;
+                    this.lifespan = 0;
+
+                    this.speed = Phaser.Math.GetSpeed(250, 1);
+                },
+
+                fire: function (x, y, angle)
+                {
+                    this.setActive(true);
+                    this.setVisible(true);
+                    //  Bullets fire from the middle of the screen to the given x/y
+                    this.setPosition(x, y);
+
+                //  we don't need to rotate the bullets as they are round
+                    this.setRotation(angle);
+
+                    this.dx = Math.cos(angle);
+                    this.dy = Math.sin(angle);
+
+                    this.lifespan = 1000;
+                },
+
+                update: function (time, delta)
+                {
+                    this.lifespan -= delta;
+                    this.x += this.dx * (this.speed * delta);
+                    this.y += this.dy * (this.speed * delta);
+
+                    if (this.lifespan <= 0)
+                    {
+                        this.setActive(false);
+                        this.setVisible(false);
+                    }
+                }
+            });
+        function create() {
+            this.add.rectangle(661, 256, 661, 512, 0xFFFFFF);
+        if (mapselection == "1") {
+            this.add.image(320, 256, 'background');
+        }
+
+        else if (mapselection == "2") {
+            this.add.image(320, 256, 'background2');
+        }
+            var turret_1 = this.add.image(725, 30, 'sprites0').setInteractive();
+            var turret_2 = this.add.image(725, 90, 'sprites2').setInteractive();
+            var turret_3 = this.add.image(725, 150, 'sprites3').setInteractive();
+            var turret_4 = this.add.image(725, 210, 'sprites4').setInteractive();
+            var turret_5 = this.add.image(725, 270, 'sprites5').setInteractive();
+            var turret_6 = this.add.image(725, 330, 'sprites6').setInteractive();
+            var turret_7 = this.add.image(725, 390, 'planeicon').setInteractive();
+            this.add.line(725, 425, 0, 0, 140, 0, 0x000000);
+            turret_1.on('pointerdown', function (pointer) {
+
+                turret_type="basic"
+                costtext.setText('Cost: 50');
+                turrettext.setText('Basic');
+
+            });
+            turret_2.on('pointerdown', function (pointer) {
+
+                turret_type="medium"
+                costtext.setText('Cost: 100');
+                turrettext.setText('Double');
+            });
+            turret_3.on('pointerdown', function (pointer) {
+
+                turret_type="advanced"
+                costtext.setText('Cost: 150');
+                turrettext.setText('Laser');
+            });
+            turret_4.on('pointerdown', function (pointer) {
+
+                turret_type="sniper"
+                costtext.setText('Cost: 200');
+                turrettext.setText('Sniper');
+            });
+            turret_5.on('pointerdown', function (pointer) {
+
+                turret_type="gatling"
+                costtext.setText('Cost: 250');
+                turrettext.setText('Gatling');
+            });
+            turret_6.on('pointerdown', function (pointer) {
+
+                turret_type="rocket"
+                costtext.setText('Cost: 300');
+                turrettext.setText('Rocket');
+            });
+            turret_7.on('pointerdown', function (pointer) {
+
+                turret_type="plane"
+                costtext.setText('Cost: 350');
+                turrettext.setText('Plane');
+            });
+
+
+
+            var graphics = this.add.graphics();
+            graphics.setAlpha(0)
+            drawLines(graphics);
+
+        if (mapselection == "1") {
+            path = this.add.path(96, -32);
+            path.lineTo(96, 164);
+            path.lineTo(480, 164);
+            path.lineTo(480, 544);
+        }
+
+        else if (mapselection == "2") {
+            path = this.add.path(96, -32);
+            path.lineTo(96, 164);
+            path.lineTo(544, 164);
+            path.lineTo(544, 288);
+            path.lineTo(96, 288);
+            path.lineTo(96, 416);
+            path.lineTo(544, 416);
+            path.lineTo(544, 544);
+        }
+
+
+
+            graphics.lineStyle(2, 0xffffff, 1);
+            path.draw(graphics);
+            var trashcan = this.add.sprite(619, 27, 'trash').setInteractive();
+            trashcan.on('pointerdown', function (pointer) {
+                if (trashstatus=="normal"){
+                    this.setTint(0xff0000);
+                    trashstatus="selected";
+                }
+                else if (trashstatus=="selected"){
+                    this.clearTint();
+                    trashstatus="normal";
+                }
+            });
+        laser_fire=this.sound.add('laser');
+        gunshot=this.sound.add('gunshot');
+        sniper=this.sound.add('sniper');
+        gatling=this.sound.add('gatling');
+        explode=this.sound.add('explode');
+        silenced=this.sound.add('silenced');
+        this.anims.create({
+            key: 'plane_animation',
+            frames: this.anims.generateFrameNumbers('plane', { frames: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35 ] }),
+            frameRate: 50,
+            repeat: -1
+        });
+
+            enemies = this.physics.add.group({ classType: Enemy, runChildUpdate: true });
+            turrets = this.add.group({ classType: Turret, runChildUpdate: true });
+            turrets2 = this.add.group({ classType: Turret2, runChildUpdate: true });
+            turrets3= this.add.group({ classType: Turret3, runChildUpdate: true });
+            turrets4= this.add.group({ classType: Turret4, runChildUpdate: true });
+            turrets5= this.add.group({ classType: Turret5, runChildUpdate: true });
+            turrets6= this.add.group({ classType: Turret6, runChildUpdate: true });
+            turrets7= this.add.group({ classType: Turret7, runChildUpdate: true });
+
+            bullets = this.physics.add.group({ classType: Bullet, runChildUpdate: true });
+            bullets2 = this.physics.add.group({ classType: Bullet2, runChildUpdate: true });
+            bullets3 = this.physics.add.group({ classType: Bullet3, runChildUpdate: true });
+            bullets4 = this.physics.add.group({ classType: Bullet4, runChildUpdate: true });
+            bullets5 = this.physics.add.group({ classType: Bullet5, runChildUpdate: true });
+            bullets6 = this.physics.add.group({ classType: Bullet6, runChildUpdate: true });
+            bullets7 = this.physics.add.group({ classType: Bullet7, runChildUpdate: true });
+
+            this.nextEnemy = 0;
+
+            this.physics.add.overlap(enemies, bullets, damageEnemy);
+            this.physics.add.overlap(enemies, bullets5, damageEnemy);
+            this.physics.add.overlap(enemies, bullets6, damageEnemy);
+            this.physics.add.overlap(enemies, bullets2, damageEnemy2);
+            this.physics.add.overlap(enemies, bullets3, damageEnemy3);
+            this.physics.add.overlap(enemies, bullets4, damageEnemy4);
+            this.physics.add.overlap(enemies, bullets7, damageEnemy5);
+            this.input.on('pointerdown', placeTurret);
+            coinsText = this.add.text(16, 460, 'Score: 50', { fontSize: '32px', fill: '#FFF', fontFamily: 'font1'});
+            costtext = this.add.text(650, 460, 'Cost: 50', { fontSize: '20px', fill: '#000000', fontFamily: 'font1'});
+            turrettext = this.add.text(650, 430, 'Basic', { fontSize: '20px', fill: '#000000', fontFamily: 'font1'});
+            difficulty = this.add.text(16, 430, 'Level: 1', { fontSize: '32px', fill: '#FFF', fontFamily: 'font1' });
+            healthText = this.add.text(420, 10, 'Health: 100', { fontSize: '32px', fill: '#FFF', fontFamily: 'font1' });
+        }
+
+        function damageEnemy(enemy, bullet) {
+            // only if both enemy and bullet are alive
+            if (enemy.active === true && bullet.active === true) {
+                // we remove the bullet right away
+                bullet.setActive(false);
+                bullet.setVisible(false);
+
+                // decrease the enemy hp with BULLET_DAMAGE
+                enemy.receiveDamage(BULLET_DAMAGE);
+            }
+        }
+
+        function damageEnemy2(enemy, bullet) {
+            // only if both enemy and bullet are alive
+            if (enemy.active === true && bullet.active === true) {
+                // decrease the enemy hp with BULLET_DAMAGE
+                enemy.receiveDamage(BULLET_DAMAGE2);
+            }
+        }
+
+        function damageEnemy3(enemy, bullet) {
+            // only if both enemy and bullet are alive
+            if (enemy.active === true && bullet.active === true) {
+                bullet.setActive(false);
+                bullet.setVisible(false);
+                enemy.receiveDamage(BULLET_DAMAGE3);
+            }
+        }
+
+        function damageEnemy4(enemy, bullet) {
+            // only if both enemy and bullet are alive
+            if (enemy.active === true && bullet.active === true) {
+                bullet.setActive(false);
+                bullet.setVisible(false);
+                enemy.receiveDamage(BULLET_DAMAGE4);
+            }
+        }
+
+        async function damageEnemy5(enemy, bullet) {
+            // only if both enemy and bullet are alive
+            if (enemy.active === true && bullet.active === true) {
+                await sleep(200);
+                explode.play();
+                bullet.setActive(false)
+                bullet.setVisible(false);
+                enemy.receiveDamage(BULLET_DAMAGE5=5);
+            }
+        }
+        function drawLines(graphics) {
+            graphics.lineStyle(1, 0x0000ff, 0.8);
+            for(var i = 0; i < 8; i++) {
+                graphics.moveTo(0, i * 64);
+                graphics.lineTo(640, i * 64);
+            }
+            for(var j = 0; j < 10; j++) {
+                graphics.moveTo(j * 64, 0);
+                graphics.lineTo(j * 64, 512);
+            }
+            graphics.strokePath();
+        }
+
+
+        function update(time, delta) {
+            if (time > this.nextEnemy)
+            {
+                var enemy = enemies.get();
+                if (enemy)
+                {
+                    enemy.setActive(true);
+                    enemy.setVisible(true);
+                    enemy.startOnPath();
+
+                    this.nextEnemy = time + spawntime;
+                }
+            }
+        }
+
+        function canPlaceTurret(i, j) {
+            return map[i][j] === 0;
+        }
+
+        function placeTurret(pointer) {
+            var i = Math.floor(pointer.y/64);
+            var j = Math.floor(pointer.x/64);
+            if (turret_type=="basic")
+            {
+                coinsreq = 50
+            }
+            if (turret_type=="medium")
+            {
+                coinsreq = 100
+            }
+            if (turret_type=="advanced")
+            {
+                coinsreq = 150
+            }
+            if (turret_type=="sniper")
+            {
+                coinsreq = 200
+            }
+
+            if (turret_type=="gatling")
+            {
+                coinsreq = 250
+            }
+
+            if (turret_type=="rocket")
+            {
+                coinsreq = 300
+            }
+            if (turret_type=="plane")
+            {
+                coinsreq = 350
+            }
+            if ( coins >= coinsreq){
+
+                if(canPlaceTurret(i, j)) {
+                    console.log(turret_type)
+                    if (turret_type=="basic") {
+                        //if (basic_count < 5)
+                        //{
+                            var turret = turrets.get();
+                            if (turret)
+                            {
+                                if (trashstatus=="normal"){
+                                    turret.setActive(true);
+                                    turret.setVisible(true);
+                                    turret.place(i, j);
+                                    coins -= 50;
+                                    rocket_count += 1;
+                                    coinsdisplay = ~~coins;
+                                    coinsText.setText('Score: ' + coinsdisplay);
+                                }
+                            }
+                        //}
+                    }
+
+                    else if (turret_type=="medium") {
+                        //if (medium_count < 5)
+                        //{
+                            var turret = turrets2.get();
+                            if (turret)
+                            {
+                                if (trashstatus=="normal"){
+                                    turret.setActive(true);
+                                    turret.setVisible(true);
+                                    turret.place(i, j);
+                                    coins -= 100;
+                                    rocket_count += 1;
+                                    coinsdisplay = ~~coins;
+                                    coinsText.setText('Score: ' + coinsdisplay);
+                                }
+                            }
+                        //}
+                    }
+
+                    else if (turret_type=="advanced") {
+                        //if (advanced_count < 5)
+                        //{
+                            var turret = turrets3.get();
+                            if (turret)
+                            {
+                                if (trashstatus=="normal"){
+                                    turret.setActive(true);
+                                    turret.setVisible(true);
+                                    turret.place(i, j);
+                                    coins -= 150;
+                                    rocket_count += 1;
+                                    coinsdisplay = ~~coins;
+                                    coinsText.setText('Score: ' + coinsdisplay);
+                                }
+                            }
+                        //}
+                    }
+                    else if (turret_type=="sniper") {
+                        //if (sniper_count < 5)
+                        //{
+                            var turret = turrets4.get();
+                            if (turret)
+                            {
+                                if (trashstatus=="normal"){
+                                    turret.setActive(true);
+                                    turret.setVisible(true);
+                                    turret.place(i, j);
+                                    coins -= 200;
+                                    rocket_count += 1;
+                                    coinsdisplay = ~~coins;
+                                    coinsText.setText('Score: ' + coinsdisplay);
+                                }
+                            }
+                        //}
+                    }
+                    else if (turret_type=="gatling") {
+                        //if (gatling_count < 5)
+                        //{
+                            var turret = turrets5.get();
+                            if (turret)
+                            {
+                                if (trashstatus=="normal"){
+                                    turret.setActive(true);
+                                    turret.setVisible(true);
+                                    turret.place(i, j);
+                                    coins -= 250;
+                                    rocket_count += 1;
+                                    coinsdisplay = ~~coins;
+                                    coinsText.setText('Score: ' + coinsdisplay);
+                                }
+                            }
+                        //}
+                    }
+                    else if (turret_type=="rocket") {
+                        //if (rocket_count < 5)
+                        //{
+                            var turret = turrets6.get();
+                            if (turret)
+                            {
+                                if (trashstatus=="normal"){
+                                    turret.setActive(true);
+                                    turret.setVisible(true);
+                                    turret.place(i, j);
+                                    coins -= 300;
+                                    rocket_count += 1;
+                                    coinsdisplay = ~~coins;
+                                    coinsText.setText('Score: ' + coinsdisplay);
+                                }
+                            }
+                        //}
+                    }
+                    else if (turret_type=="plane") {
+                        //if (rocket_count < 5)
+                        //{
+                            var turret = turrets7.get();
+                            if (turret)
+                            {
+                                if (trashstatus=="normal"){
+                                    turret.setActive(true);
+                                    turret.setVisible(true);
+                                    turret.place(i, j);
+                                    coins -= 350;
+                                    rocket_count += 1;
+                                    coinsdisplay = ~~coins;
+                                    coinsText.setText('Score: ' + coinsdisplay);
+                                }
+                            }
+                        //}
+                    }
+                    }
+
+                }
+
+            };
+
+        function addBullet(x, y, angle) {
+            var bullet = bullets.get();
+            if (bullet)
+            {
+                bullet.fire(x, y, angle);
+            }
+        }
+
+        function addBullet2(x, y, angle) {
+            var bullet = bullets2.get();
+            if (bullet)
+            {
+                bullet.fire(x, y, angle);
+            }
+        }
+
+        function addBullet3(x, y, angle) {
+            var bullet = bullets3.get();
+            if (bullet)
+            {
+                bullet.fire(x, y, angle);
+            }
+        }
+
+        function addBullet4(x, y, angle) {
+            var bullet = bullets4.get();
+            if (bullet)
+            {
+                bullet.fire(x, y, angle);
+            }
+        }
+        function addBullet5(x, y, angle) {
+            var bullet = bullets5.get();
+            if (bullet)
+            {
+                bullet.fire(x+10, y, angle);
+            }
+        }
+        function addBullet6(x, y, angle) {
+            var bullet = bullets6.get();
+            if (bullet)
+            {
+                bullet.fire(x-10, y, angle);
+            }
+        }
+
+        function addBullet7(x, y, angle) {
+            var bullet = bullets7.get();
+            if (bullet)
+            {
+                bullet.fire(x, y, angle);
+            }
+        }
+    </script>
+</div>
+
+</body>
+</html>
